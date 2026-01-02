@@ -42,13 +42,21 @@ Food4Philly's
 ### Installation & Setup
 1. Download the [Google Apps Script CLI Tool](https://github.com/google/clasp)
 2. Login to Google using the command
-```clasp login```
+```bash
+clasp login
+```
 2. Clone this repository using the command
-```git clone https://github.com/Shynee1/Food4Philly-Directory-Updater.git```
+```bash
+git clone https://github.com/Shynee1/Food4Philly-Directory-Updater.git
+```
 3. Create a new Apps Script project with the command
-```clasp create-script --type sheets --title "Food4Philly Directory Updater"```
+```bash
+clasp create-script --type sheets --title "Food4Philly Directory Updater"
+```
 4. Push local code to the cloud using the command
-```clasp push```
+```bash
+clasp push
+```
 5. Navigate to the [Apps Script Cloud Dashboard](https://script.google.com/home)
 6. Run the `registerTriggers()` function to link the script to the Google Form.
    - This ensures `handleFormSubmission` is triggered automatically for each new submission.
