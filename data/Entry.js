@@ -9,16 +9,17 @@ class Entry {
     static fromFormResponse(formResponse) {
         // Create fuzzy string matching class 
         const fuzzyMatching = FuzzySet(SheetData.chapters);
+        const response = FormUtils.flattenResponse(formResponse);
 
         const entry = new Entry();
-        entry.name  = entry.cleanName(formResponse[0]);
-        entry.email = formResponse[1].toLowerCase().trim();
-        entry.phone = entry.cleanPhone(formResponse[2]);
-        entry.chapter = entry.matchChapter(formResponse[3], fuzzyMatching);
-        entry.team = entry.cleanTeam(formResponse[4]);
-        entry.grade = formResponse[5] || "Senior";
+        entry.name  = entry.cleanName(response[0]);
+        entry.email = response[1].toLowerCase().trim();
+        entry.phone = entry.cleanPhone(response[2]);
+        entry.chapter = entry.matchChapter(response[3], fuzzyMatching);
+        entry.team = entry.cleanTeam(response[4]);
+        entry.grade = response[5] || "Senior";
         entry.title = entry.getTitle(entry.team);
-        entry.parentEmails = entry.splitEmails(formResponse[6]);
+        entry.parentEmails = entry.splitEmails(response[6]);
         return entry;
     }
 
