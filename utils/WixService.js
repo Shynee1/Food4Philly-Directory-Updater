@@ -91,6 +91,15 @@ const WixService = {
         return { code, body: text };
     },
 
+    /**
+     * Makes an authenticated GET request to the Wix API
+     * Automatically obtains an access token and includes it in the authorization header
+     * Handles API responses with error logging for failed requests
+     * 
+     * @static
+     * @param {string} endpoint - The API endpoint path (e.g., "/contacts/v4/contacts")
+     * @returns {object} - Object containing {code: responseCode, body: responseText}
+     */
     wixGet: function(endpoint) {
         const token = this.getAccessToken();
         const response = UrlFetchApp.fetch(
@@ -115,6 +124,43 @@ const WixService = {
     },
 
     /**
+     * Makes an authenticated PATCH request to the Wix API
+     * Automatically obtains an access token and includes it in the authorization header
+     * Handles API responses with error logging for failed requests
+     * 
+     * @static
+     * @param {string} endpoint - The API endpoint path (e.g., "/contacts/v4/contacts")
+     * @param {object} payload - The request body data to send as JSON
+     * @returns {object} - Object containing {code: responseCode, body: responseText}
+     */
+    wixPatch: function(endpoint, payload) {
+        const token = this.getAccessToken();
+
+        const response = UrlFetchApp.fetch(
+            "https://www.wixapis.com" + endpoint,
+            {
+                method: "patch",
+                contentType: "application/json",
+                headers: {
+                    Authorization: "Bearer " + token
+                },
+                payload: JSON.stringify(payload),
+                muteHttpExceptions: true
+            }
+        );
+
+        const code = response.getResponseCode();
+        const text = response.getContentText();
+
+        if (code !== 200 && code !== 201) {
+            console.error("Wix API Error:", text);
+        }
+
+        return { code, body: text };
+    },
+
+
+    /**
      * Creates a new contact in the Wix CMS
      * Constructs contact data with name, email, phone, and custom labels
      * Email is required; other fields are optional
@@ -131,56 +177,125 @@ const WixService = {
         if (!email) return;
 
         const splitName = WixUtils.splitName(name);
-        const info = {
-            name: { first: splitName.first, last: splitName.last },
-            emails: {
-                items: [{ tag: "MAIN", email: email }]
-            }
+        const payload = {
+            info: {
+                name: { first: splitName.first, last: splitName.last },
+                emails: {
+                    items: [{ tag: "MAIN", email: email }]
+                }
+            },
+            allowDuplicates: false
         };
 
         if (phone) {
-            info.phones = {
+            payload.info.phones = {
                 items: [{ tag: "MOBILE", phone: phone }]
             };
         }
 
         if (labels && labels.length) {
-            info.labelKeys = {
+            payload.info.labelKeys = {
                 items: labels.filter(Boolean)
             };
         }
 
-        return this.wixPost("/contacts/v4/contacts", { info });
+        return this.wixPost("/contacts/v4/contacts", payload);
     },
+    
+    /**
+     * Updates an existing contact in the Wix CMS
+     * Re-structures payload according to the Wix Contacts V4 PATCH API
+     * @param {object} contact - The current contact entity containing 'id' and 'revision'
+     * @param {string} name - Contact's full name to be split and updated
+     * @param {string} email - Contact's main email address
+     * @param {string} phone - Contact's mobile phone number 
+     * @param {array} labels - Array of normalized label keys for categorization
+     * @returns {object} - API response object with {code: responseCode, body: responseText}
+     */
+    updateContact: function(contact, name, email, phone, labels) {
+        if (!contact || !contact.id) return;
 
-    queryContact: function(name, email, phone) {
-        const splitName = WixUtils.splitName(name);
+        const contactId = contact.id;
+        
         const payload = {
-            query: {
-                filter: {
-                    "info.name.first": splitName.first,
-                    "info.name.last": splitName.last,
-                    "info.emails.email": email,
-                    "info.phones.phone": phone
-                },
-                fieldsets: ["FULL"]
-            }
+            revision: contact.revision,
+            info: {}
         };
 
-        const response = this.wixPost("/contacts/v4/contacts/query", payload);
-
-        if (response.code !== 200) {
-            console.error("Failed to query contact:", response.body);
-            return null;
+        if (name) {
+            const splitName = WixUtils.splitName(name);
+            payload.info.name = { first: splitName.first, last: splitName.last };
         }
 
-        const contacts = JSON.parse(response.body).contacts;
-
-        if (!contacts || contacts.length === 0) {
-            return null;
+        if (email) {
+            payload.info.emails = {
+                items: [{ tag: "MAIN", email: email }]
+            };
         }
 
-        return contacts[0];
+        if (phone) {
+            payload.info.phones = {
+                items: [{ tag: "MOBILE", phone: phone }]
+            };
+        }
+
+        if (labels && labels.length) {
+            payload.info.labelKeys = {
+                items: labels.filter(Boolean)
+            };
+        }
+
+        return this.wixPatch(`/contacts/v4/contacts/${contactId}`, payload);
+    },
+
+    queryContact: function(name, email, phone) { 
+        const executeQuery = (filter) => {
+            const payload = {
+                query: {
+                    filter: filter,
+                    fieldsets: ["FULL"]
+                }
+            };
+
+            const response = this.wixPost("/contacts/v4/contacts/query", payload);
+
+            if (response.code !== 200) {
+                console.error("Failed to query contact:", response.body);
+                return null;
+            }
+
+            const contacts = JSON.parse(response.body).contacts;
+            
+            if (contacts && contacts.length > 0) {
+                return contacts[0];
+            }
+            
+            return null;
+        };
+
+        if (name) {
+            const splitName = WixUtils.splitName(name);
+            const filter = {
+                "info.name.first": splitName.first,
+                "info.name.last": splitName.last
+            };
+            const contact = executeQuery(filter);
+            if (contact) return contact;
+        }
+
+        if (email) {
+            const filter = { "info.emails.email": email };
+            const contact = executeQuery(filter);
+            if (contact) return contact;
+        }
+
+        if (phone) {
+            const filter = { "info.phones.phone": phone };
+            const contact = executeQuery(filter);
+            if (contact) return contact;
+        }
+
+        return null;
     },
 
     queryAllContacts: function() {
@@ -223,69 +338,17 @@ const WixService = {
         return allItems || null;
     },
 
-    queryMember: function(name, email, phone) {
+    subscribeContact: function(email) {
+        if (!email) return; 
+
         const payload = {
-            dataCollectionId: "Members",
-            query: {
-                filter: {
-                    "name": name,
-                    "phone": phone,
-                    "email": email
-                }
+            emailSubscription: {
+                email: email,
+                deliverabilityStatus: "VALID",
+                subscriptionStatus: "SUBSCRIBED"
             }
         };
-        
-        const response = this.wixPost("/wix-data/v2/items/query", payload);
 
-        if (response.code !== 200) {
-            console.error("Failed to query Member:", response.body);
-            return null;
-        }
-
-        const dataItems = JSON.parse(response.body).dataItems;
-        if (!dataItems || dataItems.length === 0) {
-            return null;
-        }
-        return dataItems[0];
-    },
-
-    queryAllMembers: function() {
-        let allItems = [];
-        let cursor = null;
-        let hasNext = true;
-
-        while (hasNext) {
-            const payload = {
-                dataCollectionId: "Members",
-                query: {
-                    cursorPaging: {
-                        limit: 100
-                    }
-                }
-            };
-
-            if (cursor) {
-                payload.query.cursorPaging.cursor = cursor;
-            }
-
-            const response = WixService.wixPost("/wix-data/v2/items/query", payload);
-
-            if (response.code !== 200) {
-                console.error("Failed to query Members:", response.body);
-                return null;
-            }
-
-            const data = JSON.parse(response.body);
-
-            const items = data.dataItems || [];
-            allItems = allItems.concat(items);
-
-            const paging = data.pagingMetadata;
-
-            hasNext = paging?.hasNext === true;
-            cursor = paging?.cursors?.next || null;
-        }
-
-        return allItems || null;
+        return this.wixPost("/email-marketing/v1/email-subscriptions", payload);
     }
 };

@@ -25,7 +25,7 @@ const FormUtils = {
     }
 };
 
-const SpreadsheetUtils = {
+const SheetUtils = {
     getRangeFromColumn: function(sheet, column) {
         return sheet.getRange(2, column, sheet.getLastRow() - 1, 1);
     },
@@ -43,7 +43,7 @@ const SpreadsheetUtils = {
      * @returns {array} - Array of non-empty values from the specified column
      */
     getColumnData: function(sheet, column) {
-        return SpreadsheetUtils.getRangeFromColumn(sheet, column)
+        return SheetUtils.getRangeFromColumn(sheet, column)
             .getValues()
             .flat()
             .filter(value => value !== "");
@@ -58,7 +58,7 @@ const SpreadsheetUtils = {
      * @returns {array} - Array of non-empty values from the specified row
      */
     getRowData: function(sheet, row) {
-        return SpreadsheetUtils.getRangeFromRow(sheet, row)
+        return SheetUtils.getRangeFromRow(sheet, row)
             .getValues()[0]
             .filter(value => value !== "");
     },
@@ -73,7 +73,7 @@ const SpreadsheetUtils = {
      * @returns {GoogleAppsScript.Spreadsheet.DataValidation} - A data validation rule ready to apply
      */
     createDropdown : function(column, sheet){
-        const sourceRange = SpreadsheetUtils.getRangeFromColumn(sheet, column);
+        const sourceRange = SheetUtils.getRangeFromColumn(sheet, column);
         const validation = SpreadsheetApp.newDataValidation()
             .requireValueInRange(sourceRange)
             .build();

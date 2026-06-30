@@ -51,28 +51,7 @@ const WixUtils = {
         return "custom." + label;
     },
 
-    /**
-     * Checks if a title string contains the "Chapter Head" designation
-     * Useful for identifying leadership roles in member data
-     * Performs case-insensitive matching and handles comma-separated titles
-     * Example: "Strategy, Chapter Head" --> true
-     * 
-     * @param {string} title - The title string to search
-     * @returns {boolean} - True if "chapter head" is found, false otherwise
-     */
-    hasChapterHead: function(title) {
-        if (!title) return false;
-
-        return title
-            .split(",")
-            .some(part => part.trim().toLowerCase().includes("chapter head"));
-    },
-
-    contactExists: function(email){
-        return WixService.queryContact(email) !== null;
-    },
-
-    memberExists: function(email){
-        return WixService.queryMember(email) !== null;
+    contactExists: function(entry){
+        return WixService.queryContact(entry.name, entry.email, entry.phone) !== null;
     }
 };

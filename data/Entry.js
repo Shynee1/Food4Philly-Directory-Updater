@@ -42,20 +42,6 @@ class Entry {
         entry.grade = memberData[6];
         entry.parentEmails = entry.splitEmails(memberData[7]);
         entry.rowIndex = rowIndex;
-        entry.isNewEntry = false;
-        return entry;
-    }
-
-    static fromWixData(wixData) {
-        const entry = new Entry();
-        entry.name = wixData.name;
-        entry.title = wixData.title;
-        entry.chapter = wixData.chapter;
-        entry.email = wixData.email;
-        entry.phone = wixData.phone;
-        entry.team = wixData.team;
-        entry.grade = wixData.grade;
-        entry.isNewEntry = false;
         return entry;
     }
 
@@ -185,5 +171,14 @@ class Entry {
      */
     data() {
         return [this.name, this.title, this.chapter, this.email, this.phone, this.team, this.grade, this.parentEmails];
+    }
+
+    equals(other) {
+        return this.name === other.name &&
+               this.email === other.email &&
+               this.phone === other.phone &&
+               this.chapter === other.chapter &&
+               this.team === other.team &&
+               this.grade === other.grade;
     }
 }

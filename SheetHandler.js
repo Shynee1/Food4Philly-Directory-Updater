@@ -1,36 +1,18 @@
 const SheetHandler = {
     /**
-     * Processes a form entry by determining if it's a new or existing member and calling the appropriate handler
+     * Processes a new form response by determining if it's a new or existing entry and updating accordingly
      * @param {Entry} entry 
      * @return {void}
      */
-    processEntry: function(entry) {
-        if (SheetData.members.includes(entry.name)){
-            this.processExistingEntry(entry);
+    processFormResponse: function(entry) {
+        const index = this.findIndexOf(entry);
+        if (index == -1){
+            this.fillData(entry.data(), index);
         } else {
-            this.processNewEntry(entry);
+            const row = this.findAvailableRow(entry.team, entry.chapter);
+            SheetData.memberSheet.insertRowBefore(row);
+            this.fillData(entry.data(), row);
         }
-    },
-
-    /**
-     * Adds a new member to the directory using form response data
-     * @param {Entry} entry 
-     * @return {void}
-     */
-    processNewEntry: function(entry) {
-        const row = this.findAvailableRow(entry.team, entry.chapter);
-        SheetData.memberSheet.insertRowBefore(row);
-        this.fillData(entry.data(), row);
-    },
-
-    /**
-     * Updates an existing entry in the directory with new form response data
-     * @param {Entry} entry 
-     * @returns {void}
-     */
-    processExistingEntry: function(entry) {
-        const row = SheetData.members.indexOf(entry.name) + 2;
-        this.fillData(entry.data(), row);
     },
 
     /**
@@ -51,13 +33,13 @@ const SheetHandler = {
         var dataValidations = range.getDataValidations()[0];
 
         for (let i = 0; i < currentData.length; i++){
-            if (currentData[i] != "")
+            if (currentData[i] != "" && data[i] == "")
                 continue;
 
             currentData[i] = data[i];
 
             if (data[i] == "")
-                backgrounds[i] = MISSING_DATA_COLOR;
+                backgrounds[i] = SheetData.MISSING_DATA_COLOR;
 
             if (i == CHAPTER_COLUMN - 1)
                 dataValidations[i] = SheetData.chapterDropdown;
@@ -75,13 +57,12 @@ const SheetHandler = {
     /**
      * Finds the appropriate row to insert new member data based on team and chapter affiliation
      * Orders by team, then chapter within team, to maintain organization of the directory
-     * @param {String} team Team label to find appropriate row for 
-     * @param {String} chapter Chapter label to find appropriate row for
+     * @param {Entry} entry Directory entry for which to find the appropriate row
      * @returns {int} index of the row to fill in (1-indexed)
      */
-    findAvailableRow: function(team, chapter) {
+    findAvailableRow: function(entry) {
         const lastRow = SheetData.memberSheet.getLastRow() + 1;
-        const searchTeam = (team == "") ? "Member" : team;
+        const searchTeam = (entry.team == "") ? "Member" : entry.team;
         let lastChapterRow = lastRow;
         let lastTeamRow = lastRow;
 
@@ -91,7 +72,7 @@ const SheetHandler = {
                     lastTeamRow = i + 1;
                 }
 
-                if (SheetData.chapters[i] == chapter){
+                if (SheetData.chapters[i] == entry.chapter){
                     lastChapterRow = i + 1;
                     break;
                 }
@@ -101,5 +82,18 @@ const SheetHandler = {
         if (lastChapterRow == lastRow) lastChapterRow = lastTeamRow;
 
         return lastChapterRow + 1;
+    },
+
+    findIndexOf: function(entry) {
+        const textFinder = SheetData.memberSheet.createTextFinder(entry.name);
+        textFinder.matchCase(true).matchEntireCell(true);
+        while (textFinder.findNext() != null) {
+            const row = textFinder.getCurrentMatch().getRow();
+            const foundEntry = Entry.fromDirectory(row);
+            if (foundEntry.equals(entry)) {
+                return row;
+            }
+        }
+        return -1;
     }
 };
