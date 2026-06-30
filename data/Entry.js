@@ -41,7 +41,6 @@ class Entry {
         entry.team = memberData[5];
         entry.grade = memberData[6];
         entry.parentEmails = entry.splitEmails(memberData[7]);
-        entry.rowIndex = rowIndex;
         return entry;
     }
 

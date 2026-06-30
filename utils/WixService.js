@@ -248,6 +248,13 @@ const WixService = {
         return this.wixPatch(`/contacts/v4/contacts/${contactId}`, payload);
     },
 
+    /**
+     * Queries the Wix CMS for a contact by name, email, or phone
+     * @param {string} name - Contact's full name
+     * @param {string} email - Contact's main email address
+     * @param {string} phone - Contact's mobile phone number
+     * @returns {object|null} - The found contact or null if not found
+     */
     queryContact: function(name, email, phone) { 
         const executeQuery = (filter) => {
             const payload = {
@@ -298,6 +305,10 @@ const WixService = {
         return null;
     },
 
+    /**
+     * Queries all contacts in the Wix CMS
+     * @returns {Array|null} - An array of all contacts or null if the query fails
+     */
     queryAllContacts: function() {
         let allItems = [];
         let offset = 0;
@@ -338,11 +349,16 @@ const WixService = {
         return allItems || null;
     },
 
+    /**
+     * Subscribes a contact to the newsletter
+     * @param {string} email - The email address of the contact to subscribe
+     * @returns {object} - The response from the Wix API
+     */
     subscribeContact: function(email) {
         if (!email) return; 
 
         const payload = {
-            emailSubscription: {
+            subscription: {
                 email: email,
                 deliverabilityStatus: "VALID",
                 subscriptionStatus: "SUBSCRIBED"

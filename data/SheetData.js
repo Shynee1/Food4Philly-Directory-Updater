@@ -9,6 +9,7 @@ const SheetData = {
     MEMBERS_GRADE_COLUMN: 7,
     CHAPTERS_CHAPTER_COLUMN: 1,
     GRADES_GRADE_COLUMN: 1,
+    TEAMS_TEAM_COLUMN: 1,
     // Hex code to color cell with any missing data
     MISSING_DATA_COLOR: "#f4cccc",
     
@@ -28,15 +29,15 @@ const SheetData = {
     teams: null,
 
     initialize: function() {
-        this.directory = SpreadsheetApp.openById(DIRECTORY_SHEET_ID);
+        this.directory = SpreadsheetApp.openById(this.DIRECTORY_SHEET_ID);
         this.memberSheet = this.directory.getSheetByName("Members");
         this.teamSheet = this.directory.getSheetByName("Teams");
         this.chapterSheet = this.directory.getSheetByName("Chapters");
         this.gradeSheet = this.directory.getSheetByName("Grades");
-        this.chapterDropdown = FormUtils.createDropdown(CHAPTERS_CHAPTER_COLUMN, this.chapterSheet);
-        this.teamDropdown = FormUtils.createDropdown(TEAMS_TEAM_COLUMN, this.teamSheet);
-        this.gradeDropdown = FormUtils.createDropdown(GRADES_GRADE_COLUMN, this.gradeSheet);
-        this.chapters = SheetUtils.getColumnData(this.chapterSheet, CHAPTERS_CHAPTER_COLUMN);
-        this.teams = SheetUtils.getColumnData(this.teamSheet, TEAMS_TEAM_COLUMN);
+        this.chapterDropdown = SheetUtils.createDropdown(this.chapterSheet, this.CHAPTERS_CHAPTER_COLUMN);
+        this.teamDropdown = SheetUtils.createDropdown(this.teamSheet, this.TEAMS_TEAM_COLUMN);
+        this.gradeDropdown = SheetUtils.createDropdown(this.gradeSheet, this.GRADES_GRADE_COLUMN);
+        this.chapters = SheetUtils.getColumnData(this.chapterSheet, this.CHAPTERS_CHAPTER_COLUMN);
+        this.teams = SheetUtils.getColumnData(this.teamSheet, this.TEAMS_TEAM_COLUMN);
     }
 };

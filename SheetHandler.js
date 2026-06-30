@@ -6,13 +6,15 @@ const SheetHandler = {
      */
     processFormResponse: function(entry) {
         const index = this.findIndexOf(entry);
-        if (index == -1){
+        if (index !== -1){
             this.fillData(entry.data(), index);
+            console.log(`Updated existing entry for ${entry.name} in the directory`);
         } else {
-            const row = this.findAvailableRow(entry.team, entry.chapter);
+            const row = this.findAvailableRow(entry);
             SheetData.memberSheet.insertRowBefore(row);
             this.fillData(entry.data(), row);
-        }
+            console.log(`Added new entry for ${entry.name} to the directory`);
+        } 
     },
 
     /**
@@ -41,11 +43,11 @@ const SheetHandler = {
             if (data[i] == "")
                 backgrounds[i] = SheetData.MISSING_DATA_COLOR;
 
-            if (i == CHAPTER_COLUMN - 1)
+            if (i == SheetData.MEMBERS_CHAPTER_COLUMN - 1)
                 dataValidations[i] = SheetData.chapterDropdown;
-            else if (i == TEAM_COLUMN - 1)
+            else if (i == SheetData.MEMBERS_TEAM_COLUMN - 1)
                 dataValidations[i] = SheetData.teamDropdown;
-            else if (i == GRADE_COLUMN - 1)
+            else if (i == SheetData.MEMBERS_GRADE_COLUMN - 1)
                 dataValidations[i] = SheetData.gradeDropdown;
         }
 
@@ -61,29 +63,29 @@ const SheetHandler = {
      * @returns {int} index of the row to fill in (1-indexed)
      */
     findAvailableRow: function(entry) {
-        const lastRow = SheetData.memberSheet.getLastRow() + 1;
         const searchTeam = (entry.team == "") ? "Member" : entry.team;
-        let lastChapterRow = lastRow;
-        let lastTeamRow = lastRow;
+        
+        const textFinder = SheetData.memberSheet.createTextFinder(searchTeam);
+        textFinder.matchCase(true).matchEntireCell(true);
+        const teamMatches = textFinder.findAll();
 
-        for (let i = lastRow - 1; i >= 0; i--){
-            if (SheetData.teams[i] == searchTeam){
-                if (lastTeamRow == lastRow) {
-                    lastTeamRow = i + 1;
-                }
+        for (let i = teamMatches.length - 1; i >= 0; i--) {
+            const row = teamMatches[i].getRow();
+            const foundEntry = Entry.fromDirectory(row);
 
-                if (SheetData.chapters[i] == entry.chapter){
-                    lastChapterRow = i + 1;
-                    break;
-                }
+            if (foundEntry.chapter == entry.chapter) {
+                return row + 1;
             }
         }
 
-        if (lastChapterRow == lastRow) lastChapterRow = lastTeamRow;
-
-        return lastChapterRow + 1;
+        return teamMatches.length > 0 ? teamMatches[teamMatches.length - 1].getRow() + 1 : -1;
     },
 
+    /**
+     * Finds the index of a specific entry in the directory
+     * @param {Entry} entry The entry to find
+     * @returns {int} The index of the entry, or -1 if not found
+     */
     findIndexOf: function(entry) {
         const textFinder = SheetData.memberSheet.createTextFinder(entry.name);
         textFinder.matchCase(true).matchEntireCell(true);

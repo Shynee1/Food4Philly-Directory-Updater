@@ -72,7 +72,7 @@ const SheetUtils = {
      * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} directory - The directory spreadsheet object
      * @returns {GoogleAppsScript.Spreadsheet.DataValidation} - A data validation rule ready to apply
      */
-    createDropdown : function(column, sheet){
+    createDropdown : function(sheet, column){
         const sourceRange = SheetUtils.getRangeFromColumn(sheet, column);
         const validation = SpreadsheetApp.newDataValidation()
             .requireValueInRange(sourceRange)

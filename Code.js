@@ -14,7 +14,7 @@ function registerTriggers() {
  * Updates the Food4Philly directory with all new responses to the Membership Form
  * Should be run once to batch update with all new entries
  */
-function updateFullDirectory(){ 
+function addAllFormResponses(){ 
     const membershipForm = FormApp.openById(SheetData.MEMBERSHIP_FORM_ID);
     const responses = FormUtils.getFormResponses(membershipForm);
 
@@ -27,8 +27,40 @@ function updateFullDirectory(){
     }
 }
 
+/**
+ * Subscribes all contacts in the Wix database to the newsletter
+ * Should be run once to batch subscribe all existing contacts
+ */
+function subscribeAllContacts() {
+    const contacts = WixService.queryAllContacts();
+    console.log(`Subscribing ${contacts.length} contacts to the newsletter`);
+
+    for (contact of contacts) {
+        const name = contact?.info?.name?.first + " " + contact?.info?.name?.last;
+        const email = contact?.primaryEmail?.email;
+        console.log(`Subscribing ${name} to the newsletter`);
+        WixService.subscribeContact(email);
+    }
+}
+
+/**
+ * Test function to verify that the SheetHandler and WixHandler are working correctly
+ */
 function test() {
-    
+    SheetData.initialize();
+
+    const entry = new Entry();
+    entry.name = "Test User";
+    entry.email = "test@gmail.com";
+    entry.phone = "123-456-7890";
+    entry.chapter = "The Haverford School";
+    entry.team = "Executive";
+    entry.grade = "Senior";
+    entry.title = "Testing Manager";
+    entry.parentEmails = ["test_parent@gmail.com"];
+
+    SheetHandler.processFormResponse(entry);
+    WixHandler.processFormResponse(entry);
 }
 
 /**

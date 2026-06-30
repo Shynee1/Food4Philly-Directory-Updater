@@ -1,11 +1,18 @@
 const WixHandler = {
+    /**
+     * Processes a form response by creating or updating a Wix CMS contact
+     * @param {Entry} entry The form entry containing member information
+     * @returns {void}
+     */
     processFormResponse: function(entry){
         const contact = WixService.queryContact(entry.name, entry.email, entry.phone);
         if (contact == null) {
             this.createContacts(entry);
+            console.log(`Created new contact for ${entry.name} in Wix CMS`);
         }
         else {
             this.updateContacts(entry, contact);
+            console.log(`Updated existing contact for ${entry.name} in Wix CMS`);
         }
     },
 
@@ -19,7 +26,8 @@ const WixHandler = {
      */
     createContacts: function(entry){
         const labels = [WixUtils.normalizeLabel("Directory")];
-        this.createContact(entry.name, entry.email, entry.phone, labels);
+        WixService.createContact(entry.name, entry.email, entry.phone, labels);
+        WixService.subscribeContact(entry.email);
     
         if (entry.parentEmail){
             const emails = entry.parentEmail.split(",");
@@ -27,11 +35,18 @@ const WixHandler = {
                 const email = emails[i];
                 const parentName = `${entry.name} - Parent ${i + 1}`
                 const parentLabels = [WixUtils.normalizeLabel("Parent")];
-                this.createContact(parentName, email, "", parentLabels);
+                WixService.createContact(parentName, email, "", parentLabels);
+                WixService.subscribeContact(email);
             }
         }
     },
 
+    /**
+     * Updates an existing Wix CMS contact with new information
+     * @param {Entry} entry The form entry containing updated member information
+     * @param {Object} contact The existing Wix CMS contact to update
+     * @returns {void}
+     */
     updateContacts: function(entry, contact) {
         const parentEmails = entry.parentEmails;
         for (let i = 0; i < parentEmails.length; i++) {
@@ -40,27 +55,17 @@ const WixHandler = {
             const currentContact = WixService.queryContact(parentName, null, null);
 
             if (currentContact == null) {
-                this.createContact(parentName, parentEmails[i], "", parentLabels);
+                WixService.createContact(parentName, parentEmails[i], "", parentLabels);
             }
             else if (currentContact.email != parentEmails[i]) {
                 WixService.updateContact(currentContact, parentName, parentEmails[i], "", parentLabels);
             }
+
+            WixService.subscribeContact(parentEmails[i]);
         }
     
         let labels = [WixUtils.normalizeLabel("Directory")];
         WixService.updateContact(contact, entry.name, entry.email, entry.phone, labels);
-    },
-
-    createContact: function(name, email, phone, labels) {
-        WixService.createContact(name, email, phone, labels);
-    
-        if (response && response.status === 409) {
-            const existingContact = WixService.queryContact(name, email, phone);
-            if (existingContact) {
-                WixService.updateContact(existingContact, name, email, phone, labels);
-            }
-        }
-
-        WixService.subscribeContact(email);
+        WixService.subscribeContact(entry.email);
     }
 };
